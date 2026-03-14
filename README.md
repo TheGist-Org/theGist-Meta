@@ -14,13 +14,13 @@ If you're new, **start here**.
 GistPin is split into focused repos per track:
 
 - **Contracts (on-chain logic)**
-  - [`gistpin-contracts`](https://github.com/gistpin/gistpin-contracts)
+  - [`gistpin-contracts`](https://github.com/TheGist-Org/TheGist-contracts)
 - **Backend (API + indexer + DB)**
-  - [`gistpin-backend`](https://github.com/gistpin/gistpin-backend)
+  - [`gistpin-backend`](https://github.com/TheGist-Org/TheGist-API)
 - **Web (frontend)**
-  - [`gistpin-web`](https://github.com/gistpin/gistpin-web)
+  - [`gistpin-web`](https://github.com/TheGist-Org/TheGist-web)
 - **Mobile**
-  - [`gistpin-mobile`](https://github.com/gistpin/gistpin-mobile)
+  - [`gistpin-mobile`](https://github.com/TheGist-Org/TheGist-mobile)
 
 Each repo has its own `README` with detailed setup and contribution info.
 

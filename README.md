@@ -1,94 +1,115 @@
-# gistpin-Meta
-Central coordination repo: high-level roadmap, cross-repo architecture, global CONTRIBUTING, global CODE_OF_CONDUCT, and cross-cutting issues.
+# TheGist
 
-GistPin is a location-aware micro-messaging platform built on the Stellar ecosystem
-(Soroban smart contracts + Web2 stack). This repo acts as the **coordination hub**
-for the entire project.
+> A fully decentralized, anonymous hyperlocal messaging protocol built natively on Stellar and Soroban.
 
-If you're new, **start here**.
+No servers own your data. No identity is required. Only a Stellar wallet and a location.
+
+---
+
+## What Is TheGist?
+
+TheGist is a Web3 protocol where every message is a **signed, on-chain event anchored to a geographic location**. A gist is a short piece of content — text, image, or link — cryptographically signed by a Stellar keypair and permanently tied to a geohash on Soroban.
+
+Anyone within range can read it. No account. No profile. No algorithm. Just the chain and a coordinate.
+
+---
+
+## How the Protocol Works
+
+```
+1. User composes a gist in a mobile or web client
+2. Content is pinned to IPFS → produces a CID
+3. CID + geohash (precision 7) + author public key → signed with Stellar keypair
+4. Signed transaction submitted to Soroban GistRegistry contract
+5. Contract emits GistPosted event on-chain
+6. Indexer listens for GistPosted events → writes to PostGIS
+7. Clients query indexer via GraphQL → render nearby gists on map
+```
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Clients                              │
+│         Mobile (Expo)              Web (Next.js)            │
+│    WalletConnect / Freighter         Freighter Wallet        │
+└──────────────┬──────────────────────────────┬──────────────┘
+               │  Stellar Txn (sign + submit)  │  GraphQL Query
+               ▼                              ▼
+┌──────────────────────────┐   ┌──────────────────────────────┐
+│    Soroban Contracts      │   │      Indexer  (Node.js)       │
+│  ┌────────────────────┐  │   │                              │
+│  │  GistRegistry      │──┼───►  Polls Soroban RPC for       │
+│  │  GistVault         │  │   │  GistPosted events           │
+│  │  LocationVerifier  │  │   │  Decodes CID + geohash       │
+│  └────────────────────┘  │   │  Writes to PostGIS           │
+└──────────────────────────┘   │  Serves GraphQL API          │
+               │               └──────────────────────────────┘
+               ▼
+┌──────────────────────────┐
+│           IPFS            │
+│  Content-addressed store  │
+│  CID pinned per gist      │
+└──────────────────────────┘
+```
 
 ---
 
 ## Repositories
 
-GistPin is split into focused repos per track:
-
-- **Contracts (on-chain logic)**
-  - [`gistpin-contracts`](https://github.com/TheGist-Org/TheGist-contracts)
-- **Backend (API + indexer + DB)**
-  - [`gistpin-backend`](https://github.com/TheGist-Org/TheGist-API)
-- **Web (frontend)**
-  - [`gistpin-web`](https://github.com/TheGist-Org/TheGist-web)
-- **Mobile**
-  - [`gistpin-mobile`](https://github.com/TheGist-Org/TheGist-mobile)
-
-Each repo has its own `README` with detailed setup and contribution info.
+| Repo | Description |
+|------|-------------|
+| [theGist-Meta](https://github.com/TheGist-Org/theGist-Meta) | Central coordination: architecture, roadmap, and contributing guidelines |
+| [TheGist-contracts](https://github.com/TheGist-Org/TheGist-contracts) | Soroban smart contracts in Rust — GistRegistry, GistVault, LocationVerifier |
+| [TheGist-API](https://github.com/TheGist-Org/TheGist-API) | Soroban event indexer and read-only GraphQL API built with Node.js and PostGIS |
+| [TheGist-web](https://github.com/TheGist-Org/TheGist-web) | Next.js decentralized map client — post and browse gists in the browser |
+| [TheGist-mobile](https://github.com/TheGist-Org/TheGist-mobile) | Expo React Native app — GPS-native iOS and Android client |
 
 ---
 
-## High-Level Architecture
+## Roadmap
 
-**Goal**: Anonymous, hyperlocal micro-posts ("gists") that are:
+### Phase 1 — Contracts + Indexer
+- [x] GistRegistry Soroban contract
+- [x] GistVault tipping contract
+- [x] LocationVerifier contract
+- [ ] Soroban event indexer (Node.js + Stellar SDK)
+- [ ] PostGIS schema and geospatial queries
+- [ ] GraphQL API (Apollo Server)
 
-- Geotagged and discoverable via map UI
-- Anchored on Stellar via Soroban contracts
-- Indexed and queryable via a scalable Web2 backend
+### Phase 2 — API + Web
+- [ ] Next.js map interface with Mapbox GL JS
+- [ ] Freighter wallet integration
+- [ ] IPFS content pinning from the browser
+- [ ] Gist expiry (24h default)
+- [ ] Read-only GraphQL queries live in production
 
-### Components
-
-1. **Soroban contracts** (`gistpin-contracts`)
-
-   - `GistRegistry` contract:
-     - Stores minimal gist metadata on-chain:
-       - `gist_id`
-       - `author` (optional)
-       - `location_cell` (coarse geo cell)
-       - `content_hash` (IPFS/Arweave CID)
-       - `created_at`
-     - Indexes gists by location cell
-   - Future:
-     - Tipping / staking / moderation contracts
-
-2. **Backend & Indexer** (`gistpin-backend`)
-
-   - Listens to contract events
-   - Stores enriched gist data in Postgres + PostGIS
-   - Exposes a REST API for:
-     - `GET /gists?lat=&lon=&radius=`
-     - `POST /gists`
-     - Future: tipping, moderation, etc.
-   - Bridges to IPFS/Arweave for full content storage
-
-3. **Web Frontend** (`gistpin-web`)
-
-   - React + TS map UI
-   - Fetches gists from `gistpin-backend`
-   - Allows users to create new gists
-   - Links to on-chain transactions for verification
-
-4. **Mobile App** (`gistpin-mobile`)
-
-   - Uses the same API as the web frontend
-   - Focused on a clean, location-first UX for posting & browsing nearby gists
+### Phase 3 — Mobile + Launch
+- [ ] Expo iOS / Android app
+- [ ] WalletConnect v2 integration
+- [ ] Camera + IPFS image attachments
+- [ ] Push notifications for nearby gists
+- [ ] Testnet public launch
+- [ ] Mainnet launch
 
 ---
 
-## Getting Started
+## Protocol Principles
 
-1. **Read architecture**: `docs/architecture-overview.md`
-2. **Pick a track**:
-   - Contracts → `gistpin-contracts`
-   - Backend → `gistpin-backend`
-   - Web frontend → `gistpin-web`
-   - Mobile → `gistpin-mobile`
-3. Follow the setup instructions in that repo's `README`.
+- **Decentralized** — no central server controls message routing or storage
+- **Anonymous** — no email, username, or account required; only a Stellar address
+- **Hyperlocal** — every gist is anchored to a geohash; relevance is distance, not engagement
+- **Immutable** — on-chain anchoring ensures gists cannot be silently deleted or altered
+- **Permissionless** — anyone with a Stellar wallet can post or read
 
 ---
 
 ## Contributing
 
-- General contribution guidelines: [CONTRIBUTING.md](./CONTRIBUTING.md)
-- Code of conduct: [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup, branch conventions, and how to open issues or PRs across repos.
 
-We will manage **cross-cutting issues and milestones** in this repo, and more
-granular implementation issues directly in the relevant track repo.
+---
+
+## License
+
+MIT
